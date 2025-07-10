@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 import psycopg2
 from typing import List
- 
+import io
 
 conn_str = "postgresql://neondb_owner:npg_kzVOe8G5IEuo@ep-dark-frost-a4qkadpq-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 def sma(values: List[float], window: int):
@@ -84,22 +84,35 @@ def process_data(**context):
 
     context['ti'].xcom_push(key='processed_data', value=df.to_json())
 
-def insert_to_postgres(**context):
-    processed_data = context['ti'].xcom_pull(key='processed_data', task_ids='process_task')
-    df = pd.read_json(processed_data)
+
+ def insert_to_postgres(**context):
+    processed_json = context['ti'].xcom_pull(key='processed_data', task_ids='process_task')
+    if processed_json is None:
+        raise ValueError("No processed data found in XComs.")
+    df = pd.read_json(io.StringIO(processed_json))
+
+    print(f"Inserting {len(df)} rows into database.")
 
     conn = psycopg2.connect(conn_str)
     cur = conn.cursor()
 
-    for _, row in df.iterrows():
-        cur.execute("""
-            INSERT INTO btc_usdt_technical (open_time, open, high, low, close, volume, sma, ema, rsi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (open_time) DO NOTHING;
-        """, tuple(row))
-
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        for _, row in df.iterrows():
+            print(f"Inserting row with open_time={row['open_time']}")
+            cur.execute("""
+                INSERT INTO btc_usdt_technical (
+                    open_time, open, high, low, close, volume, sma, ema, rsi
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (open_time) DO NOTHING;
+            """, tuple(row))
+        conn.commit()
+    except Exception as e:
+        print(f"Insert error: {e}")
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
 
 
 

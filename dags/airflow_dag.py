@@ -120,19 +120,19 @@ with DAG(
     fetch_task = PythonOperator(
         task_id='fetch_task',
         python_callable=fetch_data,
-        provide_context=True,
+
     )
 
     process_task = PythonOperator(
         task_id='process_task',
         python_callable=process_data,
-        provide_context=True,
+       
     )
 
     insert_task = PythonOperator(
         task_id='insert_postgres_task',
         python_callable=insert_to_postgres,
-        provide_context=True,
+     
     )
 
     fetch_task >> process_task >> insert_task

@@ -91,16 +91,16 @@ def insert_to_postgres(**context):
 
     conn = psycopg2.connect(conn_str)
     cur = conn.cursor()
-"""
+
     try:
-    conn = psycopg2.connect(conn_str)
-    print("✅ Connected to DB")
+        conn = psycopg2.connect(conn_str)
+        print("✅ Connected to DB")
     except Exception as e:
-    print("❌ Connection failed:", e)"""
+        print("❌ Connection failed:", e)
 
 
     for _, row in df.iterrows():
-        #print("Trying to insert row:", row.to_dict())
+        print("Trying to insert row:", row.to_dict())
 
         cur.execute("""
             INSERT INTO btc_usdt_technical (open_time, open, high, low, close, volume, sma, ema, rsi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)

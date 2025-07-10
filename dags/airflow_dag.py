@@ -113,7 +113,7 @@ default_args = {
 with DAG(
     dag_id='dag_pipeline',
     default_args=default_args,
-    schedule_interval='*/5 * * * *',
+    schedule='*/5 * * * *', 
     catchup=False
 ) as dag:
 

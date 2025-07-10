@@ -100,7 +100,6 @@ def insert_to_postgres(**context):
 
 
     for _, row in df.iterrows():
-        print("Trying to insert row:", row.to_dict())
 
         cur.execute("""
             INSERT INTO btc_usdt_technical (open_time, open, high, low, close, volume, sma, ema, rsi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)

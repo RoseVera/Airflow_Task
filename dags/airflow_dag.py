@@ -85,14 +85,23 @@ def process_data(**context):
     context['ti'].xcom_push(key='processed_data', value=df.to_json())
 
 
-"""def insert_to_postgres(**context):
+def insert_to_postgres(**context):
     processed_data = context['ti'].xcom_pull(key='processed_data', task_ids='process_task')
     df = pd.read_json(processed_data)
 
     conn = psycopg2.connect(conn_str)
     cur = conn.cursor()
 
+    try:
+    conn = psycopg2.connect(conn_str)
+    print("✅ Connected to DB")
+    except Exception as e:
+    print("❌ Connection failed:", e)
+
+
     for _, row in df.iterrows():
+        print("Trying to insert row:", row.to_dict())
+
         cur.execute("""
             INSERT INTO btc_usdt_technical (open_time, open, high, low, close, volume, sma, ema, rsi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (open_time) DO NOTHING;
@@ -101,61 +110,8 @@ def process_data(**context):
     conn.commit()
     cur.close()
     conn.close()
-"""
-def insert_to_postgres(**context):
-    # Örnek bir sabit kayıt
-    example_row = (
-        datetime.utcnow(),  # open_time
-        30000.0,            # open
-        31000.0,            # high
-        29500.0,            # low
-        30500.0,            # close
-        100.5,              # volume
-        30500.0,            # sma
-        30600.0,            # ema
-        55.0                # rsi
-    )
 
-    conn = psycopg2.connect(conn_str)
-    cur = conn.cursor()
 
-    try:
-        print("Inserting example row...")
-        cur.execute("""
-            INSERT INTO btc_usdt_technical (
-                open_time, open, high, low, close, volume, sma, ema, rsi
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (open_time) DO NOTHING;
-        """, example_row)
-        conn.commit()
-        print("Example row inserted successfully.")
-
-        # Sonra gerçek veriyi insert et
-        processed_json = context['ti'].xcom_pull(key='processed_data', task_ids='process_task')
-        if processed_json is None:
-            raise ValueError("No processed data found in XComs.")
-        df = pd.read_json(io.StringIO(processed_json))
-
-        print(f"Inserting {len(df)} rows into database.")
-
-        for _, row in df.iterrows():
-            cur.execute("""
-                INSERT INTO btc_usdt_technical (
-                    open_time, open, high, low, close, volume, sma, ema, rsi
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (open_time) DO NOTHING;
-            """, tuple(row))
-
-        conn.commit()
-        print("All rows inserted successfully.")
-
-    except Exception as e:
-        print(f"Insert error: {e}")
-        conn.rollback()
-        raise
-    finally:
-        cur.close()
-        conn.close()
 
 default_args = {
     'start_date': datetime(2025, 3, 8),

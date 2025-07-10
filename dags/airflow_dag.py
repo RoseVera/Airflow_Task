@@ -38,6 +38,8 @@ def rsi(values: List[float], window: int = 14):
     return 100 - (100 / (1 + rs))
     
 def fetch_data(**context):
+    print("fetch taski yapiyor su an")
+
     url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=100'
     response = requests.get(url)
     data = response.json()
@@ -50,6 +52,8 @@ def fetch_data(**context):
     context['ti'].xcom_push(key='raw_data', value=df.to_json())
 
 def process_data(**context):
+    print("process taski yapiyor su an")
+
     raw_json = context['ti'].xcom_pull(key='raw_data', task_ids='fetch_task')
     df = pd.read_json(raw_json)
 
@@ -86,6 +90,7 @@ def process_data(**context):
 
 
 def insert_to_postgres(**context):
+    print("insert taski yapiyor su an")
     processed_data = context['ti'].xcom_pull(key='processed_data', task_ids='process_task')
     df = pd.read_json(processed_data)
 

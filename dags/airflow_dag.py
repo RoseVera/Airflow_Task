@@ -60,19 +60,16 @@ def insert_to_postgres(**context):
 
 
 default_args = {
-    'owner': 'airflow',
     'start_date': datetime(2024, 1, 1),
     'retries': 1,
-    'retry_delay': timedelta(minutes=2)
+    'retry_delay': timedelta(minutes=1)
 }
 
 with DAG(
     dag_id='dag_pipeline',
     default_args=default_args,
     schedule_interval='*/5 * * * *',
-    catchup=False,
-    tags=['crypto', 'btc', 'technical'],
-    description='Fetch BTCUSDT data, process and insert into Neon DB',
+    catchup=False
 ) as dag:
 
     fetch_task = PythonOperator(

@@ -85,7 +85,7 @@ def process_data(**context):
     context['ti'].xcom_push(key='processed_data', value=df.to_json())
 
 def insert_to_postgres(**context):
-    processed_data = context['ti'].xcom_pull(key='processed_data', task_ids='process_data_task')
+    processed_data = context['ti'].xcom_pull(key='processed_data', task_ids='process_task')
     df = pd.read_json(processed_data)
 
     conn = psycopg2.connect(conn_str)

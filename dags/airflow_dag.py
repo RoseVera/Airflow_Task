@@ -4,12 +4,40 @@ from datetime import datetime, timedelta
 import requests
 import pandas as pd
 import psycopg2
-import ta
+from typing import List
 
 
 conn_str = "postgresql://neondb_owner:npg_uBkh28WeMyXG@ep-plain-sunset-a4qz1i3u-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
+def sma(values: List[float], window: int):
+    if len(values) < window:
+        return None
+    return sum(values[-window:]) / window
 
+def ema(values: List[float], window: int, prev_ema=None):
+    if len(values) < window:
+        return None
+    k = 2 / (window + 1)
+    if prev_ema is None:
+        return sma(values, window)
+    return values[-1] * k + prev_ema * (1 - k)
+
+def rsi(values: List[float], window: int = 14):
+    if len(values) < window + 1:
+        return None
+    gains = 0
+    losses = 0
+    for i in range(-window, 0):
+        diff = values[i] - values[i - 1]
+        if diff > 0:
+            gains += diff
+        else:
+            losses -= diff
+    if losses == 0:
+        return 100
+    rs = gains / losses
+    return 100 - (100 / (1 + rs))
+    
 def fetch_data(**context):
     url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=100'
     response = requests.get(url)
@@ -23,12 +51,35 @@ def fetch_data(**context):
     context['ti'].xcom_push(key='raw_data', value=df.to_json())
 
 def process_data(**context):
-    raw_data = context['ti'].xcom_pull(key='raw_data', task_ids='fetch_data_task')
-    df = pd.read_json(raw_data)
+    raw_json = context['ti'].xcom_pull(key='raw_data', task_ids='fetch_task')
+    df = pd.read_json(raw_json)
 
-    df['sma'] = ta.trend.sma_indicator(df['close'], window=14)
-    df['ema'] = ta.trend.ema_indicator(df['close'], window=14)
-    df['rsi'] = ta.momentum.rsi(df['close'], window=14)
+    window = 14
+    closes = df['close'].tolist()
+
+    sma_list = []
+    ema_list = []
+    rsi_list = []
+
+    prev_ema_value = None
+
+    for i in range(len(df)):
+        close_slice = closes[:i+1]
+
+        sma_val = sma(close_slice, window)
+        sma_list.append(sma_val)
+
+        ema_val = ema(close_slice, window, prev_ema_value)
+        ema_list.append(ema_val)
+        prev_ema_value = ema_val
+
+        rsi_val = rsi(close_slice, window)
+        rsi_list.append(rsi_val)
+
+    df['sma'] = sma_list
+    df['ema'] = ema_list
+    df['rsi'] = rsi_list
+
     df = df[['open_time', 'open', 'high', 'low', 'close', 'volume', 'sma', 'ema', 'rsi']]
     df.dropna(inplace=True)
 

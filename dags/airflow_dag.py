@@ -7,8 +7,7 @@ import psycopg2
 from typing import List
 
 
-conn_str = "postgresql://neondb_owner:npg_uBkh28WeMyXG@ep-plain-sunset-a4qz1i3u-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-
+conn_str = "postgresql://neondb_owner:npg_kzVOe8G5IEuo@ep-dark-frost-a4qkadpq-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 def sma(values: List[float], window: int):
     if len(values) < window:
         return None

@@ -2,7 +2,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import requests
-import pandas as pd 
+import pandas as pd   
 import psycopg2
 from typing import List
 import io  

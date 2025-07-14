@@ -6,7 +6,7 @@ import pandas as pd
 import psycopg2
 from typing import List
 import io
-
+ 
 conn_str = "postgresql://neondb_owner:npg_kzVOe8G5IEuo@ep-dark-frost-a4qkadpq-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 def sma(values: List[float], window: int):
     if len(values) < window:

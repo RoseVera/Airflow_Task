@@ -97,6 +97,14 @@ def insert_to_postgres(**context):
     conn = psycopg2.connect(conn_str)
     cur = conn.cursor()
 
+    print("📊 DataFrame shape:", df.shape)
+    print("📌 Sample rows:")
+    print(df.head())  # print first 5 rows
+
+    if df.empty:
+        print("⚠️ DataFrame is EMPTY. No data to insert!")
+        return
+     
     try:
         conn = psycopg2.connect(conn_str)
         print("✅ Connected to DB")

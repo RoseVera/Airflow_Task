@@ -55,7 +55,7 @@ def process_data(**context):
     print("process taski yapiyor su an")
 
     raw_json = context['ti'].xcom_pull(key='raw_data', task_ids='fetch_task')
-    df = pd.read_json(io.StringIO(raw_json))
+    df = pd.read_json(raw_json)
 
     window = 14
     closes = df['close'].tolist()
@@ -68,21 +68,23 @@ def process_data(**context):
 
     for i in range(len(df)):
         close_slice = closes[:i+1]
-        sma_list.append(sma(close_slice, window))
+
+        sma_val = sma(close_slice, window)
+        sma_list.append(sma_val)
+
         ema_val = ema(close_slice, window, prev_ema_value)
         ema_list.append(ema_val)
         prev_ema_value = ema_val
-        rsi_list.append(rsi(close_slice, window))
+
+        rsi_val = rsi(close_slice, window)
+        rsi_list.append(rsi_val)
 
     df['sma'] = sma_list
     df['ema'] = ema_list
     df['rsi'] = rsi_list
 
     df = df[['open_time', 'open', 'high', 'low', 'close', 'volume', 'sma', 'ema', 'rsi']]
-    df = df[df['rsi'].notna()]  # Daha güvenli filtreleme
-
-    print("📊 Final processed df shape:", df.shape)
-    print(df.head())
+    df.dropna(inplace=True)
 
     context['ti'].xcom_push(key='processed_data', value=df.to_json())
 

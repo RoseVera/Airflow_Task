@@ -37,48 +37,76 @@ def rsi(values: List[float], window: int = 14):
     rs = gains / losses
     return 100 - (100 / (1 + rs))
     
-"""def fetch_data(**context):
-    print("fetch taski yapiyor su an")
-
-    url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=100'
-    response = requests.get(url)
-    data = response.json()
-
-
-    df = pd.DataFrame(data, columns=['open_time', 'open', 'high', 'low', 'close', 'volume'])
-
-    df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
-    df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
-
-    context['ti'].xcom_push(key='raw_data', value=df.to_json())
-"""
 def fetch_data(**context):
-    print("fetch taski yapiyor su an")
+    print("📥 fetch_data çalışıyor...")
 
-    url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=100'
-    response = requests.get(url)
+    def get_crypto_data(symbol="BTCUSDT", interval="5m", start=None, end=None):
+        url = "https://api.binance.com/api/v3/klines"
+        limit = 1000
+        all_data = []
 
-    if response.status_code != 200:
-        print("❌ Failed to fetch data:", response.status_code)
-        return
+        if start is None or end is None:
+            raise ValueError("Start and end datetime must be provided")
 
-    data = response.json()
-    print("📦 Raw API response (first row):", data[0])  # kontrol için
+        start_ts = int(start.timestamp() * 1000)
+        end_ts = int(end.timestamp() * 1000)
 
-    # Binance returns a list of lists, we need to unpack the first 6 fields
-    df = pd.DataFrame(data, columns=[
-        'open_time', 'open', 'high', 'low', 'close', 'volume',
-        'close_time', 'quote_asset_volume', 'number_of_trades',
-        'taker_buy_base_volume', 'taker_buy_quote_volume', 'ignore'
-    ])
+        while True:
+            params = {
+                "symbol": symbol,
+                "interval": interval,
+                "limit": limit,
+                "startTime": start_ts,
+                "endTime": end_ts,
+            }
+            response = requests.get(url, params=params)
+            data = response.json()
 
-    df = df[['open_time', 'open', 'high', 'low', 'close', 'volume']]
+            if not data or (isinstance(data, dict) and data.get("code")):
+                print(f"❌ API error: {data.get('msg', 'Unknown error')}")
+                return pd.DataFrame()  # boş döndür
 
-    df['open_time'] = pd.to_datetime(df['open_time'], unit='ms')
-    df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
+            all_data.extend(data)
 
-    print("✅ Data fetched. Shape:", df.shape)
+            if len(data) < limit:
+                break
+
+            last_open_time = data[-1][0]
+            start_ts = last_open_time + 1
+
+            if start_ts > end_ts:
+                break
+
+        df = pd.DataFrame(all_data, columns=[
+            "open_time", "open", "high", "low", "close", "volume",
+            "close_time", "quote_asset_volume", "number_of_trades",
+            "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"
+        ])
+
+        df["open_time"] = pd.to_datetime(df["open_time"], unit='ms')
+        df["close_time"] = pd.to_datetime(df["close_time"], unit='ms')
+
+        for col in ["open", "high", "low", "close", "volume"]:
+            df[col] = df[col].astype(float)
+
+        return df[["open_time", "open", "high", "low", "close", "volume"]]
+
+    # 👉 Şu anki zamanı al ve 500 dakika geriden veri çek
+    now = datetime.utcnow()
+    start_time = now - timedelta(minutes=500)
+    end_time = now
+
+    df = get_crypto_data(symbol="BTCUSDT", interval="5m", start=start_time, end=end_time)
+
+    if df.empty:
+        print("⚠️ Veri alınamadı veya API reddetti.")
+    else:
+        print(f"✅ {len(df)} satır veri alındı.")
+        print(df.head())
+
     context['ti'].xcom_push(key='raw_data', value=df.to_json())
+
+
 
 def process_data(**context):
     print("process taski yapiyor su an")

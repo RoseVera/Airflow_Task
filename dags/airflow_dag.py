@@ -56,10 +56,9 @@ def process_data(**context):
 
     raw_json = context['ti'].xcom_pull(key='raw_data', task_ids='fetch_task')
     df = pd.read_json(raw_json)
- 
-    print("📊 DataFrame shape:", df.shape)
-    print("📌 Sample rows:")
-    print(df.head()) 
+    print("raw json ", raw_json)
+
+
 
     window = 14
     closes = df['close'].tolist()

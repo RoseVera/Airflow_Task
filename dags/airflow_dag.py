@@ -43,6 +43,8 @@ def fetch_data(**context):
     url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=100'
     response = requests.get(url)
     data = response.json()
+    print("Data fetch")
+    print("da" ,data)
 
     df = pd.DataFrame(data, columns=['open_time', 'open', 'high', 'low', 'close', 'volume'])
 
@@ -56,7 +58,6 @@ def process_data(**context):
 
     raw_json = context['ti'].xcom_pull(key='raw_data', task_ids='fetch_task')
     df = pd.read_json(raw_json)
-    print("raw json ", raw_json)
 
 
 

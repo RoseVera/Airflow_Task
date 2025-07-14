@@ -93,18 +93,20 @@ def insert_to_postgres(**context):
     print("insert taski yapiyor su an")
     processed_data = context['ti'].xcom_pull(key='processed_data', task_ids='process_task')
     df = pd.read_json(processed_data)
-
-    conn = psycopg2.connect(conn_str)
-    cur = conn.cursor()
-
+ 
     print("📊 DataFrame shape:", df.shape)
     print("📌 Sample rows:")
-    print(df.head())  # print first 5 rows
+    print(df.head()) 
 
     if df.empty:
         print("⚠️ DataFrame is EMPTY. No data to insert!")
         return
      
+
+    conn = psycopg2.connect(conn_str)
+    cur = conn.cursor()
+
+  
     try:
         conn = psycopg2.connect(conn_str)
         print("✅ Connected to DB")
